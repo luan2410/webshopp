@@ -61,6 +61,7 @@ public class HelloApplication extends Application {
         classes.add(CategoryResource.class);
         classes.add(CartResource.class);
         classes.add(OrderResource.class);
+        classes.add(UserResource.class);
         classes.add(AuthFilter.class);
         classes.add(OpenApiResource.class);
         return classes;

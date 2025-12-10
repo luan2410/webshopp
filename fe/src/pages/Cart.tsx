@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api';
 import { CartItem } from '../types';
-import { Trash2, CreditCard } from 'lucide-react';
+import { Trash2, CreditCard, Plus, Minus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export function Cart() {
@@ -22,6 +22,19 @@ export function Cart() {
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateQuantity = async (id: number, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      removeItem(id);
+      return;
+    }
+    try {
+      await api.put(`/cart/${id}`, { quantity: newQuantity });
+      loadCart();
+    } catch (e) {
+      alert('Lỗi cập nhật: ' + e);
     }
   };
 
@@ -64,20 +77,41 @@ export function Cart() {
             <div className="text-slate-400">Giỏ hàng trống.</div>
           ) : (
             items.map((item) => (
-              <div key={item.id} className="bg-slate-800 p-4 rounded-lg flex items-center justify-between border border-slate-700">
-                <div className="flex items-center gap-4">
+              <div key={item.id} className="bg-slate-800 p-4 rounded-lg border border-slate-700">
+                <div className="flex items-center gap-4 mb-3">
                   <img src={item.product.image || 'https://via.placeholder.com/100'} className="w-16 h-16 object-cover rounded" />
-                  <div>
+                  <div className="flex-1">
                     <h3 className="text-white font-medium">{item.product.name}</h3>
-                    <p className="text-blue-400">
-                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.product.price)} 
-                      <span className="text-slate-400 text-sm ml-2">x {item.quantity}</span>
+                    <p className="text-blue-400 text-sm">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.product.price)}
                     </p>
                   </div>
+                  <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-300">
+                    <Trash2 className="w-5 h-5" />
+                  </button>
                 </div>
-                <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-300">
-                  <Trash2 className="w-5 h-5" />
-                </button>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      className="bg-slate-700 hover:bg-slate-600 text-white w-8 h-8 rounded flex items-center justify-center transition"
+                      disabled={item.quantity <= 1}
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <span className="text-white font-medium w-12 text-center">{item.quantity}</span>
+                    <button 
+                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      className="bg-slate-700 hover:bg-slate-600 text-white w-8 h-8 rounded flex items-center justify-center transition"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="text-brand font-bold">
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.product.price * item.quantity)}
+                  </div>
+                </div>
               </div>
             ))
           )}

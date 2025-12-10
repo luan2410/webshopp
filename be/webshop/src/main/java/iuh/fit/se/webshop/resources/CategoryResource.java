@@ -42,6 +42,26 @@ public class CategoryResource {
         }
     }
 
+    @PUT
+    @Path("/{id}")
+    @RolesAllowed("ADMIN")
+    @Operation(summary = "Update category (Admin)", security = @SecurityRequirement(name = "bearerAuth"))
+    public Response update(@Context SecurityContext sc, @PathParam("id") Long id, Category c) {
+        if (!sc.isUserInRole("ADMIN")) return Response.status(Response.Status.FORBIDDEN).build();
+        
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Transaction tx = session.beginTransaction();
+            Category existing = session.get(Category.class, id);
+            if (existing == null) return Response.status(404).build();
+            
+            existing.setName(c.getName());
+            existing.setDescription(c.getDescription());
+            session.merge(existing);
+            tx.commit();
+            return Response.ok(existing).build();
+        }
+    }
+
     @DELETE
     @Path("/{id}")
     @RolesAllowed("ADMIN")

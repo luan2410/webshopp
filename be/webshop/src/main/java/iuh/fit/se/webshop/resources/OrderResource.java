@@ -91,19 +91,55 @@ public class OrderResource {
 
     @GET
     @Operation(summary = "Get my orders (User) or All (Admin)", security = @SecurityRequirement(name = "bearerAuth"))
-    public Response getOrders(@Context SecurityContext sc) {
+    public Response getOrders(
+            @Context SecurityContext sc,
+            @QueryParam("startDate") String startDateStr,
+            @QueryParam("endDate") String endDateStr) {
         Long userId = getCurrentUserId(sc);
         if (userId == null) return Response.status(Response.Status.UNAUTHORIZED).build();
 
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            if (sc.isUserInRole("ADMIN")) {
-                List<Order> orders = session.createQuery("FROM Order ORDER BY orderDate DESC", Order.class).list();
-                return Response.ok(orders).build();
-            } else {
-                List<Order> orders = session.createQuery("FROM Order WHERE user.id = :uid ORDER BY orderDate DESC", Order.class)
-                        .setParameter("uid", userId).list();
-                return Response.ok(orders).build();
+            String baseQuery = sc.isUserInRole("ADMIN") 
+                ? "FROM Order WHERE 1=1" 
+                : "FROM Order WHERE user.id = :uid";
+            
+            // Add date filters if provided
+            if (startDateStr != null && !startDateStr.isEmpty()) {
+                baseQuery += " AND orderDate >= :startDate";
             }
+            if (endDateStr != null && !endDateStr.isEmpty()) {
+                baseQuery += " AND orderDate <= :endDate";
+            }
+            baseQuery += " ORDER BY orderDate DESC";
+            
+            var query = session.createQuery(baseQuery, Order.class);
+            
+            if (!sc.isUserInRole("ADMIN")) {
+                query.setParameter("uid", userId);
+            }
+            
+            if (startDateStr != null && !startDateStr.isEmpty()) {
+                try {
+                    Date startDate = new java.text.SimpleDateFormat("yyyy-MM-dd").parse(startDateStr);
+                    query.setParameter("startDate", startDate);
+                } catch (Exception e) {
+                    return Response.status(Response.Status.BAD_REQUEST).entity("Invalid startDate format. Use yyyy-MM-dd").build();
+                }
+            }
+            
+            if (endDateStr != null && !endDateStr.isEmpty()) {
+                try {
+                    Date endDate = new java.text.SimpleDateFormat("yyyy-MM-dd").parse(endDateStr);
+                    // Set to end of day
+                    endDate = new Date(endDate.getTime() + 24 * 60 * 60 * 1000 - 1);
+                    query.setParameter("endDate", endDate);
+                } catch (Exception e) {
+                    return Response.status(Response.Status.BAD_REQUEST).entity("Invalid endDate format. Use yyyy-MM-dd").build();
+                }
+            }
+            
+            List<Order> orders = query.list();
+            return Response.ok(orders).build();
         }
     }
 

@@ -22,7 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Decode simple JWT payload to get info if needed, or just trust token presence for now
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
-        setUser({ username: payload.sub });
+        setUser({ username: payload.sub, role: payload.role });
         setRole(payload.role);
         setIsAuthenticated(true);
       } catch (e) {
@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     saveToken(token);
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      setUser({ username: payload.sub });
+      setUser({ username: payload.sub, role: role });
       setRole(role);
       setIsAuthenticated(true);
     } catch {}

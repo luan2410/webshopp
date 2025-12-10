@@ -31,6 +31,11 @@ public class CartResource {
         public Integer quantity;
     }
 
+    public static class UpdateQuantityRequest {
+        @Schema(example = "2")
+        public Integer quantity;
+    }
+
     private Long getCurrentUserId(SecurityContext sc) {
         Principal p = sc.getUserPrincipal();
         if (p == null) return null;
@@ -89,6 +94,34 @@ public class CartResource {
         }
     }
     
+    @PUT
+    @Path("/{id}")
+    @Operation(summary = "Update cart item quantity", security = @SecurityRequirement(name = "bearerAuth"))
+    public Response updateQuantity(@Context SecurityContext sc, @PathParam("id") Long id, UpdateQuantityRequest req) {
+        Long userId = getCurrentUserId(sc);
+        if (userId == null) return Response.status(Response.Status.UNAUTHORIZED).build();
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Transaction tx = session.beginTransaction();
+            CartItem item = session.get(CartItem.class, id);
+            
+            if (item != null && item.getUser().getId().equals(userId)) {
+                if (req.quantity <= 0) {
+                    // If quantity is 0 or negative, remove item
+                    session.remove(item);
+                } else {
+                    item.setQuantity(req.quantity);
+                    session.merge(item);
+                }
+            }
+            
+            tx.commit();
+            return Response.ok(java.util.Collections.singletonMap("result", "ok")).build();
+        } catch (Exception e) {
+            return Response.serverError().entity(e.getMessage()).build();
+        }
+    }
+
     @DELETE
     @Path("/{id}")
     @Operation(summary = "Remove cart item", security = @SecurityRequirement(name = "bearerAuth"))
