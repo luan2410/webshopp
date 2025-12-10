@@ -1,5 +1,6 @@
 package iuh.fit.se.webshop.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.util.Date;
 import java.util.List;
@@ -7,6 +8,7 @@ import java.util.ArrayList;
 
 @Entity
 @Table(name = "orders")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -14,22 +16,25 @@ public class Order {
 
     @ManyToOne
     @JoinColumn(name = "user_id")
+    @JsonIgnoreProperties({"password", "hibernateLazyInitializer", "handler"})
     private User user;
 
-    @Column(nullable = false)
+    @Column(name = "orderDate", nullable = false)
     private Date orderDate;
     
-    @Column(length = 10)
+    @Column(name = "code", length = 10)
     private String code;
 
-    @Column(nullable = false)
+    @Column(name = "status", nullable = false)
     private String status; // Pending, Confirmed, Shipping, Completed, Cancelled
 
+    @Column(name = "totalAmount")
     private Double totalAmount;
     
+    @Column(name = "shippingAddress")
     private String shippingAddress;
     
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 
     public Order() {}

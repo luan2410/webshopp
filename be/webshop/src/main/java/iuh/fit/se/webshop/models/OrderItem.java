@@ -2,6 +2,7 @@ package iuh.fit.se.webshop.models;
 
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Table(name = "order_items")
@@ -17,9 +18,13 @@ public class OrderItem {
 
     @ManyToOne
     @JoinColumn(name = "product_id")
+    @JsonIgnoreProperties({"category", "hibernateLazyInitializer", "handler"})
     private Product product;
 
+    @Column(name = "quantity")
     private Integer quantity;
+    
+    @Column(name = "unitPrice")
     private Double unitPrice;
 
     public OrderItem() {}
